@@ -1,0 +1,406 @@
+@page "/compose"
+@using WUPHFApp.Data
+@using WUPHFApp.Models
+@using WUPHFApp.Services
+@inject IWuphfService WuphfService
+
+<PageTitle>Compose WUPHF</PageTitle>
+
+<div class="compose-container">
+    <div class="compose-header">
+        <h1>📝 Compose New WUPHF</h1>
+        <p>Send your message across ALL platforms simultaneously!</p>
+    </div>
+
+    <div class="compose-form">
+        <div class="message-section">
+            <label for="message" class="form-label">Your WUPHF Message</label>
+            <textarea @bind="message"
+                     class="form-control message-input"
+                     id="message"
+                     rows="4"
+                     placeholder="What do you want to WUPHF about?"></textarea>
+            <div class="character-count">@message.Length / 280 characters</div>
+        </div>
+
+        <div class="recipients-section">
+            <label class="form-label">Recipients</label>
+            <div class="recipient-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="recipients" id="allStaff" @onchange="@(() => SetRecipientType("all"))" checked="@(recipientType == "all")">
+                    <label class="form-check-label" for="allStaff">
+                        All Dunder Mifflin Staff (15 people)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="recipients" id="specific" @onchange="@(() => SetRecipientType("specific"))" checked="@(recipientType == "specific")">
+                    <label class="form-check-label" for="specific">
+                        Specific People
+                    </label>
+                </div>
+            </div>
+
+            @if (recipientType == "specific")
+            {
+                <div class="contact-selector">
+                    @foreach (var contact in contacts)
+                    {
+                        <div class="form-check contact-item">
+                            <input class="form-check-input" type="checkbox" id="contact-@contact.Id"
+                                   @onchange="@((e) => ToggleContact(contact, (bool)e.Value))">
+                            <label class="form-check-label" for="contact-@contact.Id">
+                                <strong>@contact.Name</strong> - @contact.Department
+                            </label>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="channels-section">
+            <label class="form-label">Channels (Select All That Apply)</label>
+            <div class="channel-grid">
+                @foreach (var channel in Enum.GetValues<WuphfChannel>())
+                {
+                    <div class="form-check channel-option">
+                        <input class="form-check-input" type="checkbox" id="channel-@channel"
+                               @onchange="@((e) => ToggleChannel(channel, (bool)e.Value))">
+                        <label class="form-check-label channel-label" for="channel-@channel">
+                            <span class="channel-icon">@GetChannelIcon(channel)</span>
+                            @channel
+                            @if (channel == WuphfChannel.Printer)
+                            {
+                                <small class="channel-note">(Will print on nearest printer!)</small>
+                            }
+                        </label>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="action-section">
+            <button class="btn btn-primary send-btn" @onclick="SendWuphf" disabled="@isSending">
+                @if (isSending)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    <text>Sending WUPHF...</text>
+                }
+                else
+                {
+                    <text>🚀 Send WUPHF</text>
+                }
+            </button>
+            <button class="btn btn-secondary" @onclick="PreviewWuphf">👁️ Preview</button>
+        </div>
+
+        @if (showPreview)
+        {
+            <div class="preview-section">
+                <h4>Preview</h4>
+                <div class="preview-card">
+                    <div class="preview-message">@message</div>
+                    <div class="preview-details">
+                        <div><strong>Recipients:</strong> @GetRecipientsText()</div>
+                        <div><strong>Channels:</strong> @string.Join(", ", selectedChannels)</div>
+                        <div><strong>Estimated Reach:</strong> @GetEstimatedReach() people</div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @(isSuccess ? "alert-success" : "alert-danger")" role="alert">
+                @statusMessage
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .compose-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .compose-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .compose-form {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .message-section {
+        margin-bottom: 30px;
+    }
+
+    .message-input {
+        font-size: 1.1rem;
+        min-height: 120px;
+        border: 2px solid #ff6b35;
+        border-radius: 8px;
+    }
+
+    .character-count {
+        text-align: right;
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .recipients-section, .channels-section {
+        margin-bottom: 30px;
+    }
+
+    .form-label {
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .channel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
+
+    .channel-option {
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .channel-option:hover {
+        background: #f8f9fa;
+        border-color: #ff6b35;
+    }
+
+    .channel-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+    }
+
+    .channel-icon {
+        font-size: 1.2rem;
+    }
+
+    .channel-note {
+        display: block;
+        color: #666;
+        font-style: italic;
+        margin-top: 2px;
+    }
+
+    .contact-selector {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .contact-item {
+        padding: 8px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .action-section {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .send-btn {
+        background: #ff6b35;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .send-btn:hover {
+        background: #e55a2b;
+        transform: translateY(-2px);
+    }
+
+    .send-btn:disabled {
+        background: #6c757d;
+        transform: none;
+    }
+
+    .preview-section {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .preview-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .preview-message {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+
+    .preview-details {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .preview-details > div {
+        margin-bottom: 5px;
+    }
+</style>
+
+@code {
+    private string message = "";
+    private string recipientType = "all";
+    private List<WuphfContact> contacts = new();
+    private List<WuphfContact> selectedContacts = new();
+    private List<WuphfChannel> selectedChannels = new();
+    private bool showPreview = false;
+    private bool isSending = false;
+    private string statusMessage = "";
+    private bool isSuccess = false;
+
+    protected override void OnInitialized()
+    {
+        contacts = OfficeData.GetOfficeContacts();
+    }
+
+    private void SetRecipientType(string type)
+    {
+        recipientType = type;
+        if (type == "all")
+        {
+            selectedContacts.Clear();
+        }
+    }
+
+    private void ToggleContact(WuphfContact contact, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!selectedContacts.Contains(contact))
+                selectedContacts.Add(contact);
+        }
+        else
+        {
+            selectedContacts.Remove(contact);
+        }
+    }
+
+    private void ToggleChannel(WuphfChannel channel, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!selectedChannels.Contains(channel))
+                selectedChannels.Add(channel);
+        }
+        else
+        {
+            selectedChannels.Remove(channel);
+        }
+    }
+
+    private string GetChannelIcon(WuphfChannel channel)
+    {
+        return channel switch
+        {
+            WuphfChannel.Email => "📧",
+            WuphfChannel.Text => "📱",
+            WuphfChannel.Facebook => "📘",
+            WuphfChannel.Twitter => "🐦",
+            WuphfChannel.Instagram => "📷",
+            WuphfChannel.LinkedIn => "💼",
+            WuphfChannel.Printer => "🖨️",
+            WuphfChannel.TikTok => "🎵",
+            _ => "📢"
+        };
+    }
+
+    private string GetRecipientsText()
+    {
+        return recipientType == "all" ? "All Staff (15 people)" : $"{selectedContacts.Count} selected contacts";
+    }
+
+    private int GetEstimatedReach()
+    {
+        var baseReach = recipientType == "all" ? 15 : selectedContacts.Count;
+        return baseReach * selectedChannels.Count;
+    }
+
+    private void PreviewWuphf()
+    {
+        showPreview = !showPreview;
+    }
+
+    private async Task SendWuphf()
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            statusMessage = "Please enter a message!";
+            isSuccess = false;
+            return;
+        }
+
+        if (selectedChannels.Count == 0)
+        {
+            statusMessage = "Please select at least one channel!";
+            isSuccess = false;
+            return;
+        }
+
+        isSending = true;
+        statusMessage = "";
+
+        try
+        {
+            var recipients = recipientType == "all"
+                ? contacts.Select(c => c.Name).ToList()
+                : selectedContacts.Select(c => c.Name).ToList();
+
+            await WuphfService.SendWuphfAsync(message, recipients, selectedChannels);
+
+            statusMessage = $"🎉 WUPHF sent successfully! Reached {GetEstimatedReach()} people across {selectedChannels.Count} channels!";
+            isSuccess = true;
+
+            // Reset form
+            message = "";
+            selectedChannels.Clear();
+            selectedContacts.Clear();
+            showPreview = false;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error sending WUPHF: {ex.Message}";
+            isSuccess = false;
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+}

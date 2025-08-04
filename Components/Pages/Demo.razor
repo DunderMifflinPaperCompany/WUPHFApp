@@ -1,0 +1,435 @@
+@page "/demo"
+@inject IWuphfService WuphfService
+@implements IDisposable
+
+<PageTitle>WUPHF Demo Mode</PageTitle>
+
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>🎵 WUPHF Demo Mode</h1>
+        <p>Experience the power of WUPHF with live simulated notifications!</p>
+    </div>
+
+    <div class="demo-controls">
+        <div class="control-panel">
+            <h3>Demo Controls</h3>
+            @if (!isDemoActive)
+            {
+                <button class="btn btn-success demo-btn" @onclick="StartDemo">
+                    🎵 Start Demo Mode
+                </button>
+                <p class="demo-description">
+                    Start demo mode to receive simulated WUPHFs from your Dunder Mifflin colleagues!
+                    You'll hear a "woof" sound and see notifications appear in real-time.
+                </p>
+            }
+            else
+            {
+                <button class="btn btn-danger demo-btn" @onclick="StopDemo">
+                    ⏹️ Stop Demo Mode
+                </button>
+                <div class="demo-status">
+                    <span class="status-indicator"></span>
+                    Demo Mode Active - Listening for WUPHFs...
+                </div>
+            }
+        </div>
+
+        <div class="volume-control">
+            <h4>🔊 Sound Settings</h4>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="soundEnabled" @bind="soundEnabled">
+                <label class="form-check-label" for="soundEnabled">
+                    Enable WOOF sounds
+                </label>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="TestSound">
+                🎵 Test WOOF Sound
+            </button>
+        </div>
+    </div>
+
+    <div class="notifications-section">
+        <h3>Live Notifications (@notifications.Count)</h3>
+
+        @if (notifications.Count == 0)
+        {
+            <div class="no-notifications">
+                <p>No notifications yet. Start demo mode to begin receiving WUPHFs!</p>
+            </div>
+        }
+        else
+        {
+            <div class="notification-list">
+                @foreach (var notification in notifications.OrderByDescending(n => n.Timestamp).Take(10))
+                {
+                    <div class="notification-item @GetNotificationClass(notification)" @onclick="() => PlayNotificationSound()">
+                        <div class="notification-header">
+                            <div class="notification-sender">
+                                <span class="channel-icon">@GetChannelIcon(notification.Channel)</span>
+                                <strong>@notification.Sender</strong>
+                            </div>
+                            <div class="notification-time">
+                                @notification.Timestamp.ToString("HH:mm:ss") • @notification.Channel
+                            </div>
+                        </div>
+                        <div class="notification-message">
+                            @notification.Message
+                        </div>
+                        <div class="notification-actions">
+                            <small>Click to replay WOOF sound • Received via @notification.Channel</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="demo-stats">
+        <h3>Demo Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">@notifications.Count</div>
+                <div class="stat-label">Total Notifications</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">@GetUniqueChannels()</div>
+                <div class="stat-label">Channels Used</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">@GetUniqueSenders()</div>
+                <div class="stat-label">Different Senders</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">@soundsPlayed</div>
+                <div class="stat-label">WOOFs Played</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-info">
+        <h3>About Demo Mode</h3>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>🐕 WOOF Sound</h4>
+                <p>Every WUPHF notification plays a signature "woof" sound to grab your attention across all platforms!</p>
+            </div>
+            <div class="info-card">
+                <h4>📱 Multi-Channel</h4>
+                <p>Notifications simulate coming from email, text, social media, and even your printer!</p>
+            </div>
+            <div class="info-card">
+                <h4>🏢 Office Characters</h4>
+                <p>Receive WUPHFs from Michael Scott, Jim Halpert, Dwight, and the whole Scranton branch!</p>
+            </div>
+            <div class="info-card">
+                <h4>🎯 Real-Time</h4>
+                <p>Experience the revolutionary WUPHF technology with live, simulated notifications!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .demo-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .demo-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .demo-controls {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .control-panel, .volume-control {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .demo-btn {
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        border-radius: 25px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .demo-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        background: #28a745;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .notifications-section {
+        margin-bottom: 30px;
+    }
+
+    .notification-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .notification-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #ff6b35;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .notification-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .notification-item.new {
+        border-left-color: #28a745;
+        background: #f8fff8;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .notification-sender {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .channel-icon {
+        font-size: 1.2rem;
+    }
+
+    .notification-time {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .notification-message {
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    .notification-actions {
+        font-size: 0.8rem;
+        color: #999;
+        font-style: italic;
+    }
+
+    .no-notifications {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .demo-stats {
+        margin-bottom: 30px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .stat-item {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #28a745;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .demo-info {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .info-card {
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+
+    .info-card h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .info-card p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+</style>
+
+@code {
+    private bool isDemoActive = false;
+    private bool soundEnabled = true;
+    private List<WuphfReceivedEventArgs> notifications = new();
+    private int soundsPlayed = 0;
+
+    protected override void OnInitialized()
+    {
+        WuphfService.WuphfReceived += OnWuphfReceived;
+    }
+
+    private void StartDemo()
+    {
+        isDemoActive = true;
+        WuphfService.StartDemoMode();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void StopDemo()
+    {
+        isDemoActive = false;
+        WuphfService.StopDemoMode();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task TestSound()
+    {
+        if (soundEnabled)
+        {
+            await PlayNotificationSound();
+        }
+    }
+
+    private async Task PlayNotificationSound()
+    {
+        if (soundEnabled)
+        {
+            await WuphfService.PlayWoofSoundAsync();
+            soundsPlayed++;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnWuphfReceived(object? sender, WuphfReceivedEventArgs e)
+    {
+        notifications.Add(e);
+        InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            if (soundEnabled)
+            {
+                await PlayNotificationSound();
+            }
+        });
+    }
+
+    private string GetChannelIcon(WuphfChannel channel)
+    {
+        return channel switch
+        {
+            WuphfChannel.Email => "📧",
+            WuphfChannel.Text => "📱",
+            WuphfChannel.Facebook => "📘",
+            WuphfChannel.Twitter => "🐦",
+            WuphfChannel.Instagram => "📷",
+            WuphfChannel.LinkedIn => "💼",
+            WuphfChannel.Printer => "🖨️",
+            WuphfChannel.TikTok => "🎵",
+            _ => "📢"
+        };
+    }
+
+    private string GetNotificationClass(WuphfReceivedEventArgs notification)
+    {
+        return DateTime.Now.Subtract(notification.Timestamp).TotalSeconds < 5 ? "new" : "";
+    }
+
+    private int GetUniqueChannels()
+    {
+        return notifications.Select(n => n.Channel).Distinct().Count();
+    }
+
+    private int GetUniqueSenders()
+    {
+        return notifications.Select(n => n.Sender).Distinct().Count();
+    }
+
+    public void Dispose()
+    {
+        WuphfService.WuphfReceived -= OnWuphfReceived;
+        if (isDemoActive)
+        {
+            WuphfService.StopDemoMode();
+        }
+    }
+}

@@ -1,0 +1,4 @@
+# WOOF Sound File
+# This represents the signature WUPHF notification sound
+# In a real implementation, this would be a .wav or .mp3 file
+# For demo purposes, we'll simulate playing this sound

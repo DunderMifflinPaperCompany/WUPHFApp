@@ -1,0 +1,47 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="wuphf-header">
+                <span class="wuphf-logo">📱 WUPHF</span>
+                <span class="wuphf-tagline">Washington University Public Health Fund</span>
+                <span class="wuphf-subtitle">by Ryan Howard</span>
+            </div>
+            <a href="https://wuphf.com" target="_blank">WUPHF.com</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<style>
+    .wuphf-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .wuphf-logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ff6b35;
+    }
+
+    .wuphf-tagline {
+        font-size: 0.9rem;
+        color: #666;
+        font-style: italic;
+    }
+
+    .wuphf-subtitle {
+        font-size: 0.7rem;
+        color: #999;
+    }
+</style>

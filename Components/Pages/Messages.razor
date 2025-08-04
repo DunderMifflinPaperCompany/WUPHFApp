@@ -1,0 +1,613 @@
+@page "/messages"
+
+<PageTitle>WUPHF Messages</PageTitle>
+
+<div class="messages-container">
+    <div class="messages-header">
+        <h1>📨 WUPHF Messages</h1>
+        <p>Your complete WUPHF message history and inbox</p>
+    </div>
+
+    <div class="messages-controls">
+        <div class="filter-tabs">
+            <button class="tab-btn @(activeTab == "sent" ? "active" : "")" @onclick="@(() => SetActiveTab("sent"))">
+                📤 Sent (@sentMessages.Count)
+            </button>
+            <button class="tab-btn @(activeTab == "received" ? "active" : "")" @onclick="@(() => SetActiveTab("received"))">
+                📥 Received (@receivedMessages.Count)
+            </button>
+            <button class="tab-btn @(activeTab == "drafts" ? "active" : "")" @onclick="@(() => SetActiveTab("drafts"))">
+                📝 Drafts (@draftMessages.Count)
+            </button>
+        </div>
+        <div class="search-controls">
+            <input type="text" class="form-control" placeholder="Search messages..." @bind="searchTerm" @oninput="FilterMessages" />
+        </div>
+    </div>
+
+    <div class="messages-content">
+        @if (activeTab == "sent")
+        {
+            <div class="messages-list">
+                @foreach (var message in filteredSentMessages.OrderByDescending(m => m.CreatedAt))
+                {
+                    <div class="message-card sent-message">
+                        <div class="message-header">
+                            <div class="message-info">
+                                <strong>To: @string.Join(", ", message.Recipients.Take(3))</strong>
+                                @if (message.Recipients.Count > 3)
+                                {
+                                    <span class="recipient-count">+@(message.Recipients.Count - 3) more</span>
+                                }
+                                <div class="message-meta">
+                                    <span class="message-time">@message.CreatedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                    <span class="message-status @message.Status.ToString().ToLower()">@message.Status</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-content">
+                            @message.Content
+                        </div>
+                        <div class="message-footer">
+                            <div class="message-channels">
+                                @foreach (var channel in message.Channels)
+                                {
+                                    <span class="channel-badge">@GetChannelIcon(channel) @channel</span>
+                                }
+                            </div>
+                            <div class="message-stats">
+                                <span class="reach-stat">👥 @message.Reach reached</span>
+                                @if (message.IsPrinted)
+                                {
+                                    <span class="print-stat">🖨️ Printed</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (activeTab == "received")
+        {
+            <div class="messages-list">
+                @foreach (var message in filteredReceivedMessages.OrderByDescending(m => m.Timestamp))
+                {
+                    <div class="message-card received-message">
+                        <div class="message-header">
+                            <div class="message-info">
+                                <strong>From: @message.Sender</strong>
+                                <div class="message-meta">
+                                    <span class="message-time">@message.Timestamp.ToString("MMM dd, yyyy HH:mm")</span>
+                                    <span class="channel-received">via @message.Channel</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-content">
+                            @message.Message
+                        </div>
+                        <div class="message-footer">
+                            <div class="message-actions">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ReplyToMessage(message)">
+                                    ↩️ Reply
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ForwardMessage(message)">
+                                    ➡️ Forward
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (activeTab == "drafts")
+        {
+            <div class="messages-list">
+                @if (draftMessages.Count == 0)
+                {
+                    <div class="no-messages">
+                        <div class="no-messages-icon">📝</div>
+                        <h3>No drafts yet</h3>
+                        <p>Your draft WUPHFs will appear here.</p>
+                        <a href="/compose" class="btn btn-primary">Create New WUPHF</a>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var draft in draftMessages.OrderByDescending(m => m.CreatedAt))
+                    {
+                        <div class="message-card draft-message">
+                            <div class="message-header">
+                                <div class="message-info">
+                                    <strong>Draft WUPHF</strong>
+                                    <div class="message-meta">
+                                        <span class="message-time">Created @draft.CreatedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="message-content">
+                                @(string.IsNullOrEmpty(draft.Content) ? "Empty draft..." : draft.Content)
+                            </div>
+                            <div class="message-footer">
+                                <div class="draft-actions">
+                                    <button class="btn btn-sm btn-primary" @onclick="() => EditDraft(draft)">
+                                        ✏️ Edit & Send
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDraft(draft)">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        @if (GetCurrentMessages().Count == 0 && !string.IsNullOrEmpty(searchTerm))
+        {
+            <div class="no-messages">
+                <div class="no-messages-icon">🔍</div>
+                <h3>No messages found</h3>
+                <p>Try adjusting your search terms.</p>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isSuccess ? "alert-success" : "alert-danger")" role="alert">
+            @statusMessage
+        </div>
+    }
+</div>
+
+<style>
+    .messages-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .messages-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #6f42c1, #e83e8c);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .messages-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 5px;
+    }
+
+    .tab-btn {
+        padding: 10px 20px;
+        border: none;
+        background: #f8f9fa;
+        color: #666;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .tab-btn:hover {
+        background: #e9ecef;
+    }
+
+    .tab-btn.active {
+        background: #ff6b35;
+        color: white;
+    }
+
+    .search-controls input {
+        padding: 8px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 20px;
+        min-width: 250px;
+    }
+
+    .search-controls input:focus {
+        border-color: #ff6b35;
+        outline: none;
+    }
+
+    .messages-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .message-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #ff6b35;
+        transition: all 0.3s ease;
+    }
+
+    .message-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .message-card.sent-message {
+        border-left-color: #28a745;
+    }
+
+    .message-card.received-message {
+        border-left-color: #007bff;
+    }
+
+    .message-card.draft-message {
+        border-left-color: #6c757d;
+        background: #f8f9fa;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .message-info strong {
+        color: #333;
+        font-size: 1rem;
+    }
+
+    .message-meta {
+        display: flex;
+        gap: 15px;
+        margin-top: 5px;
+    }
+
+    .message-time {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .message-status {
+        font-size: 0.8rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .message-status.sent {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .message-status.sending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .message-status.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .channel-received {
+        font-size: 0.85rem;
+        color: #007bff;
+        font-weight: 500;
+    }
+
+    .recipient-count {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: normal;
+    }
+
+    .message-content {
+        margin-bottom: 15px;
+        line-height: 1.5;
+        color: #333;
+        font-size: 1rem;
+    }
+
+    .message-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .message-channels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .channel-badge {
+        background: #f8f9fa;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .message-stats {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .reach-stat, .print-stat {
+        font-weight: 500;
+    }
+
+    .print-stat {
+        color: #6f42c1;
+    }
+
+    .message-actions, .draft-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-sm {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+        border-radius: 15px;
+    }
+
+    .no-messages {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .no-messages-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .no-messages h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .no-messages p {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        min-width: 300px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+
+@code {
+    private List<WuphfMessage> sentMessages = new();
+    private List<WuphfReceivedEventArgs> receivedMessages = new();
+    private List<WuphfMessage> draftMessages = new();
+
+    private List<WuphfMessage> filteredSentMessages = new();
+    private List<WuphfReceivedEventArgs> filteredReceivedMessages = new();
+
+    private string activeTab = "sent";
+    private string searchTerm = "";
+    private string statusMessage = "";
+    private bool isSuccess = false;
+
+    protected override void OnInitialized()
+    {
+        LoadMessages();
+        FilterMessages();
+    }
+
+    private void LoadMessages()
+    {
+        // Load sent messages
+        sentMessages = OfficeData.GetSampleWuphfs();
+
+        // Create some sample received messages
+        receivedMessages = new List<WuphfReceivedEventArgs>
+        {
+            new WuphfReceivedEventArgs
+            {
+                Message = "Hey! Did you see the new Finer Things Club meeting agenda?",
+                Sender = "Oscar Martinez",
+                Timestamp = DateTime.Now.AddHours(-1),
+                Channel = WuphfChannel.Email
+            },
+            new WuphfReceivedEventArgs
+            {
+                Message = "FACT: Bears eat beets. Bears. Beets. Battlestar Galactica.",
+                Sender = "Dwight K. Schrute",
+                Timestamp = DateTime.Now.AddHours(-2),
+                Channel = WuphfChannel.Text
+            },
+            new WuphfReceivedEventArgs
+            {
+                Message = "New sales leads available! Let's crush Q4! 📈",
+                Sender = "Michael Scott",
+                Timestamp = DateTime.Now.AddHours(-3),
+                Channel = WuphfChannel.Facebook
+            },
+            new WuphfReceivedEventArgs
+            {
+                Message = "Don't forget about the Dundie Awards next week!",
+                Sender = "Pam Beesly",
+                Timestamp = DateTime.Now.AddHours(-4),
+                Channel = WuphfChannel.Instagram
+            }
+        };
+
+        // Create some draft messages
+        draftMessages = new List<WuphfMessage>
+        {
+            new WuphfMessage
+            {
+                Content = "Reminder: Company picnic this Saturday...",
+                Status = WuphfStatus.Draft,
+                CreatedAt = DateTime.Now.AddDays(-1)
+            },
+            new WuphfMessage
+            {
+                Content = "",
+                Status = WuphfStatus.Draft,
+                CreatedAt = DateTime.Now.AddHours(-6)
+            }
+        };
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        FilterMessages();
+    }
+
+    private void FilterMessages()
+    {
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            filteredSentMessages = sentMessages.ToList();
+            filteredReceivedMessages = receivedMessages.ToList();
+        }
+        else
+        {
+            filteredSentMessages = sentMessages.Where(m =>
+                m.Content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                m.Recipients.Any(r => r.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+
+            filteredReceivedMessages = receivedMessages.Where(m =>
+                m.Message.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                m.Sender.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private List<object> GetCurrentMessages()
+    {
+        return activeTab switch
+        {
+            "sent" => filteredSentMessages.Cast<object>().ToList(),
+            "received" => filteredReceivedMessages.Cast<object>().ToList(),
+            "drafts" => draftMessages.Cast<object>().ToList(),
+            _ => new List<object>()
+        };
+    }
+
+    private string GetChannelIcon(WuphfChannel channel)
+    {
+        return channel switch
+        {
+            WuphfChannel.Email => "📧",
+            WuphfChannel.Text => "📱",
+            WuphfChannel.Facebook => "📘",
+            WuphfChannel.Twitter => "🐦",
+            WuphfChannel.Instagram => "📷",
+            WuphfChannel.LinkedIn => "💼",
+            WuphfChannel.Printer => "🖨️",
+            WuphfChannel.TikTok => "🎵",
+            _ => "📢"
+        };
+    }
+
+    private async Task ReplyToMessage(WuphfReceivedEventArgs message)
+    {
+        statusMessage = $"Opening reply to {message.Sender}...";
+        isSuccess = true;
+        StateHasChanged();
+
+        await Task.Delay(1500);
+
+        // In a real app, this would navigate to the compose page with pre-filled recipient
+        statusMessage = "✅ Reply window opened! (This would redirect to compose page)";
+
+        await Task.Delay(3000);
+        statusMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task ForwardMessage(WuphfReceivedEventArgs message)
+    {
+        statusMessage = "Opening forward dialog...";
+        isSuccess = true;
+        StateHasChanged();
+
+        await Task.Delay(1500);
+
+        statusMessage = "✅ Forward window opened! (This would redirect to compose page)";
+
+        await Task.Delay(3000);
+        statusMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task EditDraft(WuphfMessage draft)
+    {
+        statusMessage = "Opening draft for editing...";
+        isSuccess = true;
+        StateHasChanged();
+
+        await Task.Delay(1500);
+
+        statusMessage = "✅ Draft opened for editing! (This would redirect to compose page)";
+
+        await Task.Delay(3000);
+        statusMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task DeleteDraft(WuphfMessage draft)
+    {
+        statusMessage = "Deleting draft...";
+        isSuccess = true;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+
+        draftMessages.Remove(draft);
+        statusMessage = "✅ Draft deleted successfully!";
+
+        await Task.Delay(2000);
+        statusMessage = "";
+        StateHasChanged();
+    }
+}

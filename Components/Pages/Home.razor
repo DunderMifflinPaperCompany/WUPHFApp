@@ -1,0 +1,270 @@
+﻿@page "/"
+@using WUPHFApp.Data
+@using WUPHFApp.Models
+@using WUPHFApp.Services
+@inject IWuphfService WuphfService
+
+<PageTitle>WUPHF Dashboard</PageTitle>
+
+<div class="dashboard-container">
+    <div class="hero-section">
+        <h1 class="wuphf-title">🐕 WUPHF Dashboard</h1>
+        <p class="wuphf-description">
+            Welcome to the revolutionary communication platform that connects you across
+            <strong>ALL</strong> your social media channels simultaneously!
+        </p>
+        <div class="ryan-quote">
+            <em>"It's like a phone, but for the internet!" - Ryan Howard, Founder & Visionary</em>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">@stats.TotalWuphfsSent</div>
+            <div class="stat-label">Total WUPHFs Sent</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">@stats.TotalReach</div>
+            <div class="stat-label">People Reached</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">@stats.PrinterPages</div>
+            <div class="stat-label">Printer Pages Used</div>
+        </div>
+        <div class="stat-card success-rate">
+            <div class="stat-number">@stats.SuccessRate%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+    </div>
+
+    <div class="recent-wuphfs">
+        <h3>Recent WUPHFs</h3>
+        <div class="wuphf-list">
+            @foreach (var wuphf in recentWuphfs.Take(5))
+            {
+                <div class="wuphf-item">
+                    <div class="wuphf-header">
+                        <strong>@wuphf.Sender</strong>
+                        <span class="wuphf-time">@wuphf.CreatedAt.ToString("HH:mm")</span>
+                    </div>
+                    <div class="wuphf-content">@wuphf.Content</div>
+                    <div class="wuphf-channels">
+                        @foreach (var channel in wuphf.Channels)
+                        {
+                            <span class="channel-badge">@GetChannelIcon(channel) @channel</span>
+                        }
+                    </div>
+                    <div class="wuphf-reach">Reached @wuphf.Reach people</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+            <a href="/compose" class="btn btn-primary">📝 Compose New WUPHF</a>
+            <a href="/demo" class="btn btn-secondary">🎵 Start Demo Mode</a>
+            <a href="/contacts" class="btn btn-outline-primary">👥 Manage Contacts</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .hero-section {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
+        color: white;
+        border-radius: 15px;
+    }
+
+    .wuphf-title {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .wuphf-description {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+    }
+
+    .ryan-quote {
+        font-style: italic;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid #ff6b35;
+    }
+
+    .success-rate {
+        border-left-color: #28a745;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .recent-wuphfs {
+        margin-bottom: 40px;
+    }
+
+    .wuphf-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .wuphf-item {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #ff6b35;
+    }
+
+    .wuphf-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .wuphf-time {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .wuphf-content {
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+
+    .wuphf-channels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+
+    .channel-badge {
+        background: #f8f9fa;
+        padding: 3px 8px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .wuphf-reach {
+        color: #28a745;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .quick-actions {
+        text-align: center;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: #ff6b35;
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: #e55a2b;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border: none;
+    }
+
+    .btn-outline-primary {
+        background: transparent;
+        color: #ff6b35;
+        border: 2px solid #ff6b35;
+    }
+
+    .btn-outline-primary:hover {
+        background: #ff6b35;
+        color: white;
+    }
+</style>
+
+@code {
+    private WuphfStats stats = new();
+    private List<WuphfMessage> recentWuphfs = new();
+
+    protected override void OnInitialized()
+    {
+        stats = OfficeData.GetCurrentStats();
+        recentWuphfs = OfficeData.GetSampleWuphfs();
+    }
+
+    private string GetChannelIcon(WuphfChannel channel)
+    {
+        return channel switch
+        {
+            WuphfChannel.Email => "📧",
+            WuphfChannel.Text => "📱",
+            WuphfChannel.Facebook => "📘",
+            WuphfChannel.Twitter => "🐦",
+            WuphfChannel.Instagram => "📷",
+            WuphfChannel.LinkedIn => "💼",
+            WuphfChannel.Printer => "🖨️",
+            WuphfChannel.TikTok => "🎵",
+            _ => "📢"
+        };
+    }
+}

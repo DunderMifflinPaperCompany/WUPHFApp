@@ -1,0 +1,612 @@
+@page "/stats"
+
+<PageTitle>WUPHF Statistics</PageTitle>
+
+<div class="stats-container">
+    <div class="stats-header">
+        <h1>📊 WUPHF Statistics</h1>
+        <p>Comprehensive analytics for your revolutionary communication platform</p>
+    </div>
+
+    <div class="summary-cards">
+        <div class="summary-card total">
+            <div class="card-icon">🚀</div>
+            <div class="card-content">
+                <h3>@stats.TotalWuphfsSent</h3>
+                <p>Total WUPHFs Sent</p>
+            </div>
+        </div>
+        <div class="summary-card reach">
+            <div class="card-icon">🌍</div>
+            <div class="card-content">
+                <h3>@stats.TotalReach</h3>
+                <p>People Reached</p>
+            </div>
+        </div>
+        <div class="summary-card success">
+            <div class="card-icon">✅</div>
+            <div class="card-content">
+                <h3>@stats.SuccessRate%</h3>
+                <p>Success Rate</p>
+            </div>
+        </div>
+        <div class="summary-card printer">
+            <div class="card-icon">🖨️</div>
+            <div class="card-content">
+                <h3>@stats.PrinterPages</h3>
+                <p>Printer Pages</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-section">
+        <div class="chart-card">
+            <h3>Channel Usage Distribution</h3>
+            <div class="channel-chart">
+                @foreach (var channel in stats.ChannelUsage.OrderByDescending(c => c.Value))
+                {
+                    var percentage = (double)channel.Value / stats.ChannelUsage.Values.Sum() * 100;
+                    <div class="channel-bar">
+                        <div class="channel-info">
+                            <span class="channel-name">@GetChannelIcon(channel.Key) @channel.Key</span>
+                            <span class="channel-count">@channel.Value</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: @percentage%"></div>
+                        </div>
+                        <span class="percentage">@percentage.ToString("F1")%</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3>Performance Metrics</h3>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">@stats.AverageResponseTime.ToString("F1")s</div>
+                    <div class="metric-label">Avg Response Time</div>
+                    <div class="metric-trend positive">↗ 12% faster</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">@GetReachPerWuphf().ToString("F1")</div>
+                    <div class="metric-label">Avg Reach per WUPHF</div>
+                    <div class="metric-trend positive">↗ 5.2% increase</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">@GetChannelsPerWuphf().ToString("F1")</div>
+                    <div class="metric-label">Avg Channels per WUPHF</div>
+                    <div class="metric-trend neutral">→ Stable</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">@GetPrintSuccessRate()%</div>
+                    <div class="metric-label">Print Success Rate</div>
+                    <div class="metric-trend positive">↗ 3% improvement</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detailed-stats">
+        <div class="stat-card">
+            <h3>📧 Email Performance</h3>
+            <div class="stat-details">
+                <div class="stat-row">
+                    <span>Messages Sent:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Email, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Delivery Rate:</span>
+                    <strong>97.3%</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Open Rate:</span>
+                    <strong>42.1%</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Avg Response Time:</span>
+                    <strong>3.2 hours</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <h3>📱 SMS Performance</h3>
+            <div class="stat-details">
+                <div class="stat-row">
+                    <span>Messages Sent:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Text, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Delivery Rate:</span>
+                    <strong>99.8%</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Read Rate:</span>
+                    <strong>89.5%</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Avg Response Time:</span>
+                    <strong>12 minutes</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <h3>📘 Social Media Performance</h3>
+            <div class="stat-details">
+                <div class="stat-row">
+                    <span>Facebook Posts:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Facebook, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Twitter Posts:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Twitter, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Instagram Posts:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Instagram, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Total Engagement:</span>
+                    <strong>2,847 interactions</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card special">
+            <h3>🖨️ Printer Integration (Beta)</h3>
+            <div class="stat-details">
+                <div class="stat-row">
+                    <span>Print Jobs Sent:</span>
+                    <strong>@stats.ChannelUsage.GetValueOrDefault(WuphfChannel.Printer, 0)</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Pages Printed:</span>
+                    <strong>@stats.PrinterPages</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Success Rate:</span>
+                    <strong>@GetPrintSuccessRate()%</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Avg Print Time:</span>
+                    <strong>2.3 seconds</strong>
+                </div>
+            </div>
+            <div class="feature-note">
+                <em>Revolutionary feature: Your WUPHFs automatically print on the nearest available printer!</em>
+            </div>
+        </div>
+    </div>
+
+    <div class="recent-activity">
+        <h3>Recent Activity</h3>
+        <div class="activity-list">
+            @foreach (var wuphf in recentWuphfs.Take(8))
+            {
+                <div class="activity-item">
+                    <div class="activity-time">@wuphf.CreatedAt.ToString("MMM dd, HH:mm")</div>
+                    <div class="activity-content">
+                        <strong>@wuphf.Sender</strong> sent a WUPHF to @wuphf.Reach people via @wuphf.Channels.Count channel(s)
+                    </div>
+                    <div class="activity-status @wuphf.Status.ToString().ToLower()">@wuphf.Status</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="insights-section">
+        <h3>📈 Key Insights</h3>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-icon">🏆</div>
+                <h4>Top Performing Channel</h4>
+                <p>
+                    <strong>@GetTopChannel()</strong> has the highest engagement rate at 94.2%.
+                    Users respond fastest to this channel with an average response time of @stats.AverageResponseTime.ToString("F1") seconds.
+                </p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon">📊</div>
+                <h4>Growth Trend</h4>
+                <p>
+                    WUPHF usage has increased by <strong>34%</strong> this month.
+                    The printer integration feature has contributed to a 15% boost in user engagement.
+                </p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon">💡</div>
+                <h4>Optimization Opportunity</h4>
+                <p>
+                    Consider promoting <strong>@GetLeastUsedChannel()</strong> channel usage.
+                    It currently represents only @GetChannelPercentage(GetLeastUsedChannelEnum()).ToString("F1")% of total messages.
+                </p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon">🎯</div>
+                <h4>Success Rate</h4>
+                <p>
+                    Your @stats.SuccessRate% success rate is <strong>above industry average</strong>.
+                    Multi-channel messaging increases delivery success by 23% compared to single-channel approaches.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .stats-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #6f42c1, #007bff);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .summary-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-left: 4px solid #007bff;
+    }
+
+    .summary-card.total { border-left-color: #ff6b35; }
+    .summary-card.reach { border-left-color: #28a745; }
+    .summary-card.success { border-left-color: #17a2b8; }
+    .summary-card.printer { border-left-color: #6f42c1; }
+
+    .card-icon {
+        font-size: 3rem;
+        opacity: 0.8;
+    }
+
+    .card-content h3 {
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .card-content p {
+        margin: 5px 0 0;
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .channel-chart {
+        margin-top: 20px;
+    }
+
+    .channel-bar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .channel-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .channel-name {
+        font-weight: 500;
+    }
+
+    .channel-count {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        overflow: hidden;
+        min-width: 100px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff6b35, #f7931e);
+        transition: width 0.3s ease;
+    }
+
+    .percentage {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+        min-width: 45px;
+        text-align: right;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    .metric-trend {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .metric-trend.positive { color: #28a745; }
+    .metric-trend.negative { color: #dc3545; }
+    .metric-trend.neutral { color: #6c757d; }
+
+    .detailed-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-top: 4px solid #007bff;
+    }
+
+    .stat-card.special {
+        border-top-color: #6f42c1;
+        background: linear-gradient(145deg, #f8f6ff, #ffffff);
+    }
+
+    .stat-card h3 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .stat-details {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+
+    .feature-note {
+        margin-top: 15px;
+        padding: 10px;
+        background: #e6f3ff;
+        border-radius: 5px;
+        color: #0066cc;
+        font-size: 0.9rem;
+    }
+
+    .recent-activity {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .activity-list {
+        margin-top: 20px;
+    }
+
+    .activity-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 15px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-time {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .activity-content {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .activity-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .activity-status.sent {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .activity-status.sending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .activity-status.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .insights-section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .insight-card {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .insight-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .insight-card h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .insight-card p {
+        margin: 0;
+        color: #666;
+        line-height: 1.5;
+        font-size: 0.9rem;
+    }
+</style>
+
+@code {
+    private WuphfStats stats = new();
+    private List<WuphfMessage> recentWuphfs = new();
+
+    protected override void OnInitialized()
+    {
+        stats = OfficeData.GetCurrentStats();
+        recentWuphfs = OfficeData.GetSampleWuphfs();
+    }
+
+    private string GetChannelIcon(WuphfChannel channel)
+    {
+        return channel switch
+        {
+            WuphfChannel.Email => "📧",
+            WuphfChannel.Text => "📱",
+            WuphfChannel.Facebook => "📘",
+            WuphfChannel.Twitter => "🐦",
+            WuphfChannel.Instagram => "📷",
+            WuphfChannel.LinkedIn => "💼",
+            WuphfChannel.Printer => "🖨️",
+            WuphfChannel.TikTok => "🎵",
+            _ => "📢"
+        };
+    }
+
+    private double GetReachPerWuphf()
+    {
+        return stats.TotalWuphfsSent > 0 ? (double)stats.TotalReach / stats.TotalWuphfsSent : 0;
+    }
+
+    private double GetChannelsPerWuphf()
+    {
+        var totalChannelUsage = stats.ChannelUsage.Values.Sum();
+        return stats.TotalWuphfsSent > 0 ? (double)totalChannelUsage / stats.TotalWuphfsSent : 0;
+    }
+
+    private int GetPrintSuccessRate()
+    {
+        return 87; // Simulated success rate for printer integration
+    }
+
+    private string GetTopChannel()
+    {
+        return stats.ChannelUsage.OrderByDescending(c => c.Value).FirstOrDefault().Key.ToString();
+    }
+
+    private string GetLeastUsedChannel()
+    {
+        return stats.ChannelUsage.OrderBy(c => c.Value).FirstOrDefault().Key.ToString();
+    }
+
+    private WuphfChannel GetLeastUsedChannelEnum()
+    {
+        return stats.ChannelUsage.OrderBy(c => c.Value).FirstOrDefault().Key;
+    }
+
+    private double GetChannelPercentage(WuphfChannel channel)
+    {
+        var total = stats.ChannelUsage.Values.Sum();
+        return total > 0 ? (double)stats.ChannelUsage.GetValueOrDefault(channel, 0) / total * 100 : 0;
+    }
+}

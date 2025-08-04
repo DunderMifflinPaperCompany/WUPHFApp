@@ -1,0 +1,565 @@
+@page "/contacts"
+
+<PageTitle>WUPHF Contacts</PageTitle>
+
+<div class="contacts-container">
+    <div class="contacts-header">
+        <h1>👥 WUPHF Contacts</h1>
+        <p>Manage your Dunder Mifflin contacts for maximum WUPHF efficiency</p>
+    </div>
+
+    <div class="contacts-controls">
+        <div class="search-section">
+            <input type="text" class="form-control search-input" placeholder="Search contacts..." @bind="searchTerm" @oninput="FilterContacts" />
+        </div>
+        <div class="filter-section">
+            <label class="form-label">Filter by Department:</label>
+            <select class="form-select" @bind="selectedDepartment" @bind:after="FilterContacts">
+                <option value="">All Departments</option>
+                @foreach (var dept in departments)
+                {
+                    <option value="@dept">@dept</option>
+                }
+            </select>
+        </div>
+        <div class="stats-section">
+            <div class="contact-stat">
+                <strong>@filteredContacts.Count</strong>
+                <span>Contacts</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="contacts-grid">
+        @foreach (var contact in filteredContacts)
+        {
+            <div class="contact-card @(selectedContacts.Contains(contact.Id) ? "selected" : "")">
+                <div class="contact-header">
+                    <div class="contact-avatar">
+                        @GetContactInitials(contact.Name)
+                    </div>
+                    <div class="contact-info">
+                        <h3>@contact.Name</h3>
+                        <p class="contact-department">@contact.Department</p>
+                    </div>
+                    <div class="contact-actions">
+                        <input type="checkbox" class="form-check-input"
+                               checked="@selectedContacts.Contains(contact.Id)"
+                               @onchange="@((e) => ToggleContactSelection(contact.Id, (bool)e.Value!))" />
+                    </div>
+                </div>
+
+                <div class="contact-details">
+                    <div class="contact-field">
+                        <span class="field-icon">📧</span>
+                        <span class="field-value">@contact.Email</span>
+                    </div>
+                    <div class="contact-field">
+                        <span class="field-icon">📱</span>
+                        <span class="field-value">@contact.PhoneNumber</span>
+                    </div>
+                </div>
+
+                <div class="social-channels">
+                    <h4>Social Media Channels</h4>
+                    <div class="channel-list">
+                        @if (!string.IsNullOrEmpty(contact.FacebookHandle))
+                        {
+                            <div class="channel-item">
+                                <span class="channel-icon">📘</span>
+                                <span class="channel-handle">@contact.FacebookHandle</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(contact.TwitterHandle))
+                        {
+                            <div class="channel-item">
+                                <span class="channel-icon">🐦</span>
+                                <span class="channel-handle">@contact.TwitterHandle</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(contact.InstagramHandle))
+                        {
+                            <div class="channel-item">
+                                <span class="channel-icon">📷</span>
+                                <span class="channel-handle">@contact.InstagramHandle</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(contact.LinkedInHandle))
+                        {
+                            <div class="channel-item">
+                                <span class="channel-icon">💼</span>
+                                <span class="channel-handle">@contact.LinkedInHandle</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="contact-footer">
+                    <button class="btn btn-primary btn-sm wuphf-btn" @onclick="() => SendQuickWuphf(contact)">
+                        🚀 Quick WUPHF
+                    </button>
+                    <small class="contact-note">
+                        @if (contact.IsOfficeEmployee)
+                        {
+                            <span class="office-badge">🏢 Office Employee</span>
+                        }
+                    </small>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (selectedContacts.Count > 0)
+    {
+        <div class="bulk-actions">
+            <div class="bulk-info">
+                <strong>@selectedContacts.Count</strong> contact(s) selected
+            </div>
+            <div class="bulk-buttons">
+                <button class="btn btn-primary" @onclick="SendBulkWuphf">
+                    📢 Send Bulk WUPHF
+                </button>
+                <button class="btn btn-secondary" @onclick="ClearSelection">
+                    Clear Selection
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (filteredContacts.Count == 0)
+    {
+        <div class="no-contacts">
+            <div class="no-contacts-icon">🔍</div>
+            <h3>No contacts found</h3>
+            <p>Try adjusting your search criteria or department filter.</p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isSuccess ? "alert-success" : "alert-danger")" role="alert">
+            @statusMessage
+        </div>
+    }
+</div>
+
+<style>
+    .contacts-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .contacts-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #17a2b8, #007bff);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .contacts-controls {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 20px;
+        align-items: end;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .search-input {
+        padding: 10px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 25px;
+        font-size: 1rem;
+    }
+
+    .search-input:focus {
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+
+    .contact-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        min-width: 100px;
+    }
+
+    .contact-stat strong {
+        font-size: 1.5rem;
+        color: #ff6b35;
+    }
+
+    .contact-stat span {
+        font-size: 0.8rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .contacts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .contact-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .contact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .contact-card.selected {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .contact-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .contact-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .contact-info {
+        flex: 1;
+    }
+
+    .contact-info h3 {
+        margin: 0 0 5px;
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .contact-department {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .contact-details {
+        margin-bottom: 15px;
+    }
+
+    .contact-field {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .field-icon {
+        font-size: 1rem;
+        width: 20px;
+    }
+
+    .field-value {
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .social-channels {
+        margin-bottom: 15px;
+    }
+
+    .social-channels h4 {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .channel-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .channel-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #555;
+    }
+
+    .channel-icon {
+        font-size: 1rem;
+    }
+
+    .channel-handle {
+        font-size: 0.8rem;
+    }
+
+    .contact-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .wuphf-btn {
+        background: #ff6b35;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .wuphf-btn:hover {
+        background: #e55a2b;
+        transform: translateY(-1px);
+    }
+
+    .office-badge {
+        background: #28a745;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+
+    .bulk-actions {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 15px 25px;
+        border-radius: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        z-index: 1000;
+        border: 2px solid #ff6b35;
+    }
+
+    .bulk-info {
+        color: #ff6b35;
+        font-weight: 500;
+    }
+
+    .bulk-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .bulk-buttons .btn {
+        padding: 8px 16px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+    }
+
+    .no-contacts {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .no-contacts-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .no-contacts h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .no-contacts p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        min-width: 300px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+
+@code {
+    private List<WuphfContact> allContacts = new();
+    private List<WuphfContact> filteredContacts = new();
+    private List<string> selectedContacts = new();
+    private List<string> departments = new();
+    private string searchTerm = "";
+    private string selectedDepartment = "";
+    private string statusMessage = "";
+    private bool isSuccess = false;
+
+    protected override void OnInitialized()
+    {
+        allContacts = OfficeData.GetOfficeContacts();
+        filteredContacts = allContacts.ToList();
+        departments = allContacts.Select(c => c.Department).Distinct().OrderBy(d => d).ToList();
+    }
+
+    private void FilterContacts()
+    {
+        filteredContacts = allContacts.Where(contact =>
+            (string.IsNullOrEmpty(searchTerm) ||
+             contact.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             contact.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             contact.Department.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(selectedDepartment) ||
+             contact.Department == selectedDepartment)
+        ).ToList();
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetContactInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        else if (parts.Length == 1)
+        {
+            return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+        }
+        return "??";
+    }
+
+    private void ToggleContactSelection(string contactId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!selectedContacts.Contains(contactId))
+                selectedContacts.Add(contactId);
+        }
+        else
+        {
+            selectedContacts.Remove(contactId);
+        }
+    }
+
+    private void ClearSelection()
+    {
+        selectedContacts.Clear();
+    }
+
+    private async Task SendQuickWuphf(WuphfContact contact)
+    {
+        try
+        {
+            var message = $"Quick WUPHF from the WUPHF app! Hello {contact.Name}!";
+            var channels = new List<WuphfChannel> { WuphfChannel.Email, WuphfChannel.Text };
+
+            statusMessage = $"Sending quick WUPHF to {contact.Name}...";
+            isSuccess = true;
+            StateHasChanged();
+
+            // Simulate delay
+            await Task.Delay(1500);
+
+            statusMessage = $"✅ Quick WUPHF sent successfully to {contact.Name}!";
+
+            // Clear message after 3 seconds
+            await Task.Delay(3000);
+            statusMessage = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Error sending WUPHF: {ex.Message}";
+            isSuccess = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendBulkWuphf()
+    {
+        if (selectedContacts.Count == 0)
+        {
+            statusMessage = "Please select at least one contact.";
+            isSuccess = false;
+            return;
+        }
+
+        try
+        {
+            statusMessage = $"Sending bulk WUPHF to {selectedContacts.Count} contact(s)...";
+            isSuccess = true;
+            StateHasChanged();
+
+            // Simulate sending delay
+            await Task.Delay(2000);
+
+            var selectedContactNames = allContacts
+                .Where(c => selectedContacts.Contains(c.Id))
+                .Select(c => c.Name)
+                .ToList();
+
+            statusMessage = $"✅ Bulk WUPHF sent successfully to {selectedContacts.Count} contact(s)!";
+            selectedContacts.Clear();
+
+            // Clear message after 3 seconds
+            await Task.Delay(3000);
+            statusMessage = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Error sending bulk WUPHF: {ex.Message}";
+            isSuccess = false;
+            StateHasChanged();
+        }
+    }
+}
