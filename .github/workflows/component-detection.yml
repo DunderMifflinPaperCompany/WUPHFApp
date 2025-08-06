@@ -28,6 +28,9 @@ jobs:
           dotnet-version: '9.0.x'
           dotnet-quality: 'preview'
 
+      - name: Restore .NET dependencies
+        run: dotnet restore
+
       - name: Component Detection
         uses: advanced-security/component-detection-dependency-submission-action@v0.1.0
         with:
