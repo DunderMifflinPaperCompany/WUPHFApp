@@ -16,17 +16,20 @@ permissions:
 
 jobs:
   dependency-submission:
-    runs-on: windows-latest
-    name: Component Detection
+    strategy:
+      matrix:
+        os: [windows-2022, windows-2025, ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    name: Component Detection (${{ matrix.os }})
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-          dotnet-quality: 'preview'
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: '9.0.x'
+      #     dotnet-quality: 'preview'
 
       - name: Restore .NET dependencies
         run: dotnet restore
