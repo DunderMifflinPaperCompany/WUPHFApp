@@ -33,6 +33,13 @@ jobs:
           # dotnet-version: '9.0.x'
           # dotnet-quality: 'preview'
 
+      - name: Ensure .NET MAUI workload is installed
+        shell: pwsh
+        run: |
+          if (-not (dotnet workload list | Select-String "maui-android")) {
+            dotnet workload install maui
+          }
+
       - name: Restore .NET dependencies
         run: dotnet restore
 
