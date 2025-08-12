@@ -36,7 +36,7 @@ jobs:
       - name: Ensure .NET MAUI workload is installed
         shell: pwsh
         run: |
-          if (-not (dotnet workload list | Select-String "maui-android")) {
+          if (-not (dotnet workload list | Select-String "maui")) {
             dotnet workload install maui-android
           }
 
